@@ -1,103 +1,107 @@
 # Discrete‑Game Identification Toolkit
 
-This is a general‐purpose Python toolkit for analysing identification in **static discrete games of incomplete information**. It extends Aguirregabiria & Mira (2019) — *“Identification of Games of Incomplete Information with Multiple Equilibria and Unobserved Heterogeneity”* — to any number of players, binary actions, multiple exogenous states and multiple latent types (finite‑mixture components).
+This is a general‐purpose Python toolkit for analysing identification in **static discrete games of incomplete information**. It extends Aguirregabiria & Mira (2019) — *“Identification of Games of Incomplete Information with Multiple Equilibria and Unobserved Heterogeneity”* — to any number of players, binary actions, multiple exogenous states, and multiple latent types.
 
 > **Paper context**  
 > The mixture‑of‑types framework distinguishes three unobservables — private information, common payoff shifters and sunspots — and shows that when the number of actions exceeds the number of mixture components the model is non‑parametrically identified (Aguirregabiria & Mira 2019, *Quantitative Economics*, 10: 1659‑1701).
+>
+> **Why you might care**  
+> In empirical IO we often specify a structural entry/exit or adoption game, simulate equilibria, then try to estimate pay‑off primitives.  
+> Identification asks: *could two different parameter vectors generate exactly the same observable distributions?*  
+> If the answer is “yes”, your estimates are meaningless. This toolkit computes the Hessian of the log‑likelihood and the Jacobian of the equilibrium constraints, then checks the rank of the stacked matrix. Full rank ⇒ local identification.
 
 ---
 
-## Features
-
-| Function | What it does |
-|----------|--------------|
-| `solve_equilibrium` | Iterates best‑responses under a logit link to obtain equilibrium CCPs for every state × type |
-| `compute_joint_distribution` | Mixes over latent types to get the unconditional distribution of action profiles |
-| `compute_scores_general` | Builds analytical score vectors ∂log Q/∂θ for mixture weights and CCPs |
-| `build_hessian_general` | Assembles the block‑diagonal Hessian of the log‑likelihood |
-| `build_Dc_hp_general` | Constructs Jacobian of equilibrium constraints w.r.t. mixture weights + CCPs |
-| `ranks_and_condition_numbers` | Returns ranks and condition numbers of key matrices to check identification |
-
-*Logit link implemented; probit easily added by supplying its inverse‑link derivative.*
-
----
-
-## Installation
+## Quick Install & Smoke‑Test
 
 ```bash
-git clone https://github.com/<your‑handle>/discrete‑game‑identification.git
-cd discrete‑game‑identification
-pip install numpy
+git clone  <this‑repo>
+cd empirical-io-discrete-game-toolkit        # project root
+python -m pip install -e .                   # editable install
+python example_usage.py                      # reproduces 2×2×2 baseline from Aguirregabiria and Mira (2019)
+```
+
+Console excerpt:
+
+```
+Ranks:
+  rank_hessian   : 48
+  rank_hessian_h : 16
+  rank_Dc_hp     : 48
+  rank_J         : 64
+
+Condition numbers:
+  cond_H : 1.20e+06
+  cond_J : 1.10e+07
 ```
 
 ---
 
-## Quick-Start Example
+## What’s Inside
+
+| Layer | File / module | Purpose |
+|-------|---------------|---------|
+| **Core library** | `src/discrete_game_identification/`<br>  `game_identification.py` | Solver for equilibrium CCPs, joint‑prob calculator, score/Hessian builders, Jacobian and rank diagnostics |
+| **One‑shot example** | `example_usage.py` | 2‑player, 4‑state, 2‑type replication of Aguirregabiria & Mira (2019) |
+| **Theory primer** | `primer/primer.md` (view) • `primer.ipynb` (run) | 10‑slide markdown / notebook introduction to the model and identification tests |
+| **Hands‑on notebooks** | `notebooks/01_simulate_game.py` → simulate & plot<br>`notebooks/02_identification_test.py` → run diagnostics<br>`notebooks/03_structural_estimation.py` → micro‑MLE demo | Concrete, runnable tutorials with plots |
+| **Visual helpers** | inline functions in the notebooks | CCP curves, heat‑maps, singular‑value plots |
+
+---
+
+## Minimal Code Example
 
 ```python
 import numpy as np
 from discrete_game_identification import (
     solve_equilibrium, compute_joint_distribution,
     compute_scores_general, build_hessian_general,
-    build_Dc_hp_general, ranks_and_condition_numbers,
+    build_Dc_hp_general, ranks_and_condition_numbers
 )
 
-# Dimensions
-nplayers   = 2
-num_z      = 4          # z ∈ {0, 1/3, 2/3, 1}
-num_kappa  = 2          # κ ∈ {A, B}
+# 2 players, 3 state values each, single latent type
+z = np.linspace(0,1,3)
+alpha = np.zeros((2,3,1)); beta = np.zeros((2,2,3,1))
+alpha[0,:,0] = -1 + 4*z;  beta[0,1,:,0] = -3
+alpha[1,:,0] = -1 + 3*z;  beta[1,0,:,0] = -2
 
-# Payoff parameters α_j(z,k) and β_{j,i}(z,k)
-alpha = np.zeros((nplayers, num_z, num_kappa))
-beta  = np.zeros((nplayers, nplayers, num_z, num_kappa))
-
-zvals = np.arange(num_z) / (num_z - 1)
-
-# Player 1
-alpha[0]        = -2.0 + 5.0 * zvals[:,None] + 1.0 * np.arange(num_kappa)
-beta[0,1]       = -2.0                       # no z or κ effect
-# Player 2
-alpha[1]        = -3.0 + 4.0 * zvals[:,None] + 0.5 * np.arange(num_kappa)
-beta[1,0]       = -3.0
-
-# 70 % probability that κ = A in every state
-nstates = num_z ** nplayers
-h_matrix = 0.7 * np.ones((nstates, num_kappa))
-
-# Equilibrium + diagnostics
-p_eq   = solve_equilibrium(alpha, beta)
-Q, A   = compute_joint_distribution(p_eq, h_matrix)
-scores = compute_scores_general(p_eq, h_matrix, A)
-H      = build_hessian_general(scores, Q)
-Dc_hp  = build_Dc_hp_general(p_eq, beta)
-ranks, conds = ranks_and_condition_numbers(H, Dc_hp)
-
-print(ranks)
-print(conds)
+p_eq = solve_equilibrium(alpha, beta)              # CCPs
+Q,_  = compute_joint_distribution(p_eq, np.ones((9,1)))
+scores = compute_scores_general(p_eq, np.ones((9,1)), _)
+H     = build_hessian_general(scores, Q)
+Dc    = build_Dc_hp_general(p_eq, beta)
+print(ranks_and_condition_numbers(H, Dc)[0]['rank_J'])
 ```
 
 ---
 
-## File Overview
+## Learning Path
 
-- discrete_game_identification.py  # core toolkit
-- example_usage.py                 # replicates the 2×2×2 example
-- README.md                        # this file
-- LICENSE                          # MIT
-
----
-
-## Extending the Toolkit
-
-- add probit or other link functions → modify solve_equilibrium and derivatives
-- allow non‑binary actions → generalise action enumeration and probability formulas
-- incorporate payoff‑parameter Jacobian (Dc_pi) for structural estimation
-- Monte‑Carlo engine for power studies of rank tests
-
-Pull requests welcome!
+1. **Read the 10‑slide primer** (`primer/primer.md` or `primer.ipynb`) – five minutes.
+2. **Run Notebook 01** – see how CCPs respond to payoff changes and plot joint probabilities.
+3. **Run Notebook 02** – compute Hessian & Jacobian; interpret rank and condition numbers.
+4. **Run Notebook 03** – perform a one‑parameter MLE to see ID vs estimation.
 
 ---
 
-## Citations
+## Extending the toolkit
 
-Aguirregabiria, V. & Mira, P. (2019). “Identification of Games of Incomplete Information with Multiple Equilibria and Unobserved Heterogeneity.” Quantitative Economics, 10 (4), 1659‑1701.
+* **More link functions** – add probit by replacing `logistic`/`qlogit` and derivatives.
+* **Multinomial actions** – generalise `generate_action_combinations` and probability formulas.
+* **Structural‐parameter Jacobian** – adapt pattern in `build_Dc_hp_general`.
+* **Monte‑Carlo ID power study** – loop over simulated datasets and log rank failures.
+
+Pull requests or issue discussions welcome!
+
+---
+
+## References
+
+* **Aguirregabiria, V. & Mira, P.** (2019) “Identification of games of incomplete information with multiple equilibria and unobserved heterogeneity.” *Quantitative Economics* 10 (4): 1659‑1701.  
+* **Tamer, E.** (2003) “Incomplete Models of Strategic Interaction.” *Econometrica*.
+
+---
+
+## License
+
+[MIT](./LICENSE) – free for academic or commercial use; attribution appreciated.
