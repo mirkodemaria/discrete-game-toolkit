@@ -45,8 +45,8 @@ In this example which replicates Aguirregabiria and Mira (2019), the model is lo
 |-------|---------------|---------|
 | **Core library** | `src/discrete_game_identification/`<br>  `game_identification.py` | Solver for equilibrium CCPs, joint‑prob calculator, score/Hessian builders, Jacobian and rank diagnostics |
 | **One‑shot example** | `example_usage.py` | 2‑player, 4‑state, 2‑type replication of Aguirregabiria & Mira (2019) |
-| **Theory primer** | `primer/primer.md` (view) • `primer.ipynb` (run) | 10‑slide markdown / notebook introduction to the model and identification tests |
-| **Hands‑on notebooks** | `notebooks/01_simulate_game.py` → simulate & plot<br>`notebooks/02_identification_test.py` → run diagnostics<br>`notebooks/03_structural_estimation.py` → micro‑MLE demo | Concrete, runnable tutorials with plots |
+| **Theory primer** | `primer.ipynb` | Simple and quick 10-point introduction to the model and identification tests |
+| **Hands‑on notebooks** | `notebooks/01_simulate_game.py` → simulate & plot<br>`notebooks/02_identification_test.py` → run diagnostics<br>`notebooks/03_structural_estimation.py` → micro‑MLE demo | Tutorials with plots |
 | **Visual helpers** | inline functions in the notebooks | CCP curves, heat‑maps, singular‑value plots |
 
 ---
