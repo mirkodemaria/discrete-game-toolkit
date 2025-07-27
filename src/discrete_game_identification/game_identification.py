@@ -1,32 +1,36 @@
 """
-Discrete‑Game Identification Toolkit
+Discrete-Game Identification Toolkit
 ====================================
 
 This module provides tools for analysing identification in static discrete
-games of incomplete information.  It generalises the 2×2×2 logistic
-example of Aguirregabiria & Mira (2019) to models with an arbitrary
-number of players, binary actions, multiple values of the players’
+games of incomplete information. It generalises the 2x2x2 logistic
+example of Aguirregabiria & Mira (2019) to models with an arbitrary
+number of players, binary actions, multiple values of the players'
 exogenous state variables, and multiple latent types (mixture
-components).  The toolkit computes equilibrium conditional choice
+components). The toolkit computes equilibrium conditional choice
 probabilities (CCPs) under a logit link, constructs the joint
 distribution of actions by mixing over types, assembles score vectors
-and the Hessian of the log‑likelihood, and builds the Jacobian
-matrices associated with the equilibrium constraints.  It also
+and the Hessian of the log-likelihood, and builds the Jacobian
+matrices associated with the equilibrium constraints. It also
 contains helper functions to check identification conditions via
 matrix ranks and condition numbers.
 
 Current limitations:
 
-* The link function is logistic.  Extension to other link
-  functions (e.g., probit) requires a closed–form expression for the
+* The link function is logistic. Extension to other link
+  functions (e.g., probit) requires a closed-form expression for the
   inverse link and its derivative.
 * Payoff parameters enter linearly with a constant intercept and
-  slopes on the probabilities of each other player.  Each player’s
+  slopes on the probabilities of each other player. Each player's
   payoff for a given state and type has the form
   ``α_j(state, type) + Σ_{i≠j} β_{j,i}(state, type) * p_i``.
 * The Jacobian with respect to payoff parameters (Dc_pi) is not
   provided here; users interested in identification of payoffs can
   adapt the pattern used in ``replicate_joint_identification.py``.
+
+# Author: Mirko De Maria (July 2025)
+# m.de-maria@imperial.ac.uk
+# mirkodemaria.com
 """
 
 from __future__ import annotations
@@ -43,7 +47,7 @@ def logistic(x: np.ndarray) -> np.ndarray:
 
 
 def qlogit(p: np.ndarray) -> np.ndarray:
-    """Inverse logistic (log‑odds) function."""
+    """Inverse logistic function."""
     return np.log(p) - np.log(1.0 - p)
 
 
@@ -59,22 +63,17 @@ def solve_equilibrium(
 
     Parameters
     ----------
-    alpha : ndarray (nplayers, num_z, num_kappa)
-        Intercepts for each player, exogenous state and latent type.
-    beta : ndarray (nplayers, nplayers, num_z, num_kappa)
-        Slope coefficients: beta[j,i,z,k] multiplies the CCP of player i
-        in the payoff of player j.  The diagonal should typically be
+    alpha: Intercepts for each player, exogenous state and latent type.
+    beta: Slope coefficients: beta[j,i,z,k] multiplies the CCP of player i
+        in the payoff of player j. The diagonal should typically be
         zero.
-    max_iter : int, optional
-        Maximum number of fixed‑point iterations (default 1000).
-    tol : float, optional
-        Convergence tolerance on the L∞ norm of the CCPs (default 1e-12).
+    max_iter: Number of fixed-point iterations (default 1000). Optional.
+    tol: Convergence tolerance on the L∞ norm of the CCPs (default 1e-12).
 
     Returns
     -------
-    p_equil : ndarray (num_states, num_kappa, nplayers)
-        Equilibrium CCPs for each state (ordered lexicographically by
-        players’ z indices), type and player.
+    p_equil: Equilibrium CCPs for each state (ordered lexicographically by
+        players' z indices), type and player.
     """
     nplayers, num_z, num_kappa = alpha.shape
     # Enumerate all state combinations: list of tuples (z1,z2,...)
@@ -121,17 +120,14 @@ def compute_joint_distribution(
 
     Parameters
     ----------
-    p_equil : ndarray (num_states, num_kappa, nplayers)
-        Equilibrium CCPs.
-    h_matrix : ndarray (num_states, num_kappa)
-        Mixture weights for each state and type.  Each row should
+    p_equil: Equilibrium CCPs.
+    h_matrix: Mixture weights for each state and type.  Each row should
         sum to 1.
 
     Returns
     -------
-    Q : ndarray (num_states, num_actions)
-        Unconditional probability of each action profile at each state.
-    actions : list of tuples
+    Q: Unconditional probability of each action profile at each state.
+    actions: list of tuples
         Action profiles corresponding to the columns of Q.
     """
     num_states, num_kappa, nplayers = p_equil.shape
@@ -162,19 +158,17 @@ def compute_scores_general(
 
     Parameters
     ----------
-    p_equil : ndarray (num_states, num_kappa, nplayers)
-        Equilibrium CCPs.
-    h_matrix : ndarray (num_states, num_kappa)
-        Mixture weights for each state and type.
-    actions : iterable of tuples
+    p_equil: Equilibrium CCPs.
+    h_matrix: Mixture weights for each state and type.
+    actions: iterable of tuples
         Action profiles as returned by ``generate_action_combinations``.
 
     Returns
     -------
-    scores : list of length num_states
+    scores: list of length num_states
         Each element is a 2D array of shape (num_actions, param_dim)
         containing the score vectors for all action profiles at a
-        particular state.  The parameter ordering within a state is
+        particular state. The parameter ordering within a state is
         ``[h(0),…,h(K-1), p(0,0),…,p(0,nplayers-1), p(1,0),…,p(K-1,nplayers-1)]``.
     """
     num_states, num_kappa, nplayers = p_equil.shape
@@ -219,8 +213,8 @@ def build_hessian_general(
     Q: np.ndarray
 ) -> np.ndarray:
     """
-    Assemble the block–diagonal Hessian of the log–likelihood for the
-    general game.  Each block corresponds to a state (combination of
+    Assemble the block-diagonal Hessian of the log-likelihood for the
+    general game. Each block corresponds to a state (combination of
     exogenous variables) and is computed as
 
         H_s = ∑_{a} (1/Q_s[a]) * score_s[a] * score_s[a]ᵀ
@@ -229,13 +223,11 @@ def build_hessian_general(
     ----------
     scores : list of score matrices
         Output of ``compute_scores_general``; one matrix per state.
-    Q : ndarray (num_states, num_actions)
-        Joint distribution of actions at each state.
+    Q : Joint distribution of actions at each state.
 
     Returns
     -------
-    hessian : ndarray (num_states*param_dim, num_states*param_dim)
-        Block–diagonal Hessian matrix.
+    hessian : Block-diagonal Hessian matrix.
     """
     num_states = len(scores)
     param_dim = scores[0].shape[1]
@@ -258,8 +250,8 @@ def build_Dc_hp_general(
 ) -> np.ndarray:
     """
     Construct the Jacobian of the equilibrium constraints with respect
-    to the latent mixture weights and CCP parameters.  Only the
-    derivatives with respect to the CCPs are non‑zero; derivatives
+    to the latent mixture weights and CCP parameters. Only the
+    derivatives with respect to the CCPs are non-zero; derivatives
     w.r.t. mixture weights vanish because the constraints depend
     solely on the CCPs.
 
@@ -273,18 +265,13 @@ def build_Dc_hp_general(
 
     Parameters
     ----------
-    p_equil : ndarray (num_states, num_kappa, nplayers)
-        Equilibrium CCPs.
-    beta : ndarray (nplayers, nplayers, num_z, num_kappa)
-        Slope coefficients used in the payoff function.
-    link : str, optional
-        Currently only ``'logit'`` is supported.
+    p_equil: Equilibrium CCPs.
+    beta: Coefficients used in the payoff function.
+    link: Currently only ``'logit'`` is supported.
 
     Returns
     -------
-    Dc_hp : ndarray (num_states * nplayers * num_kappa,
-                     num_states * (num_kappa + nplayers * num_kappa))
-        Jacobian of the constraints with respect to parameters.  The
+    Dc_hp: Jacobian of the constraints with respect to parameters.  The
         columns are ordered as in the score vectors: mixture weights
         followed by CCPs.
     """
@@ -341,7 +328,7 @@ def ranks_and_condition_numbers(
     identification analysis.
 
     This routine returns the rank of the full Hessian, the rank of
-    the Hessian restricted to mixture‐weight parameters, the rank of
+    the Hessian restricted to mixture-weight parameters, the rank of
     the Jacobian of the equilibrium constraints, and the rank of the
     stacked matrix ``[H; Dc_hp]``.  It also computes condition
     numbers for ``H'H``, ``H_h'H_h``, ``Dc_hp'Dc_hp`` and the
@@ -349,33 +336,31 @@ def ranks_and_condition_numbers(
 
     Parameters
     ----------
-    hessian : ndarray (ns * m, ns * m)
-        Block–diagonal Hessian of the log–likelihood where ``m``
+    hessian: Block-diagonal Hessian of the log-likelihood where ``m``
         denotes the number of parameters per state.
-    Dc_hp : ndarray (ns * nplayers * num_kappa, ns * m)
-        Jacobian of the equilibrium constraints with respect to the
+    Dc_hp: Jacobian of the equilibrium constraints with respect to the
         parameters.  Each state contributes ``nplayers * num_kappa``
         rows.
-    num_states : int, optional
+    num_states: 
         Number of distinct exogenous state configurations.  If not
         supplied, the function infers it by matching the row and
         column dimensions of ``hessian`` and ``Dc_hp``.
-    num_kappa : int, optional
+    num_kappa: 
         Number of latent types.  If omitted, it is inferred from the
         structure of ``Dc_hp`` under the assumption that each state
         contributes a block of size ``nplayers * num_kappa`` rows.
-    nplayers : int, optional
+    nplayers: 
         Number of players.  If omitted, it is inferred along with
         ``num_kappa`` from the shape of ``Dc_hp``.
 
     Returns
     -------
-    ranks : dict
+    ranks:
         ``rank_hessian`` is the rank of the full Hessian; ``rank_hessian_h``
         is the rank of the Hessian restricted to mixture weights;
         ``rank_Dc_hp`` is the rank of ``Dc_hp``; and ``rank_J`` is the
         rank of the stacked matrix ``J = [hessian; Dc_hp]``.
-    conds : dict
+    conds: 
         ``cond_H`` is the condition number of ``H'H``; ``cond_H_h`` is
         the condition number of ``H_h'H_h``; ``cond_Dc`` is the
         condition number of ``Dc_hp'Dc_hp``; ``cond_J`` is the
@@ -449,7 +434,7 @@ def ranks_and_condition_numbers(
     }
     # Helper function for condition number
     def cond(matrix: np.ndarray) -> float:
-        """Return the condition number of a symmetric positive semi‑definite matrix."""
+        """Return the condition number of a symmetric positive semi-definite matrix."""
         # Use singular values; ignore extremely small values to avoid underflow
         u, s, vh = np.linalg.svd(matrix, full_matrices=False)
         s_nonzero = s[s > 1e-12]

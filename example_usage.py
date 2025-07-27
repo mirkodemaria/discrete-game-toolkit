@@ -1,9 +1,13 @@
-"""
-Example usage of the discrete‑game identification toolkit.
+# Author: Mirko De Maria (July 2025)
+# m.de-maria@imperial.ac.uk
+# mirkodemaria.com
 
-This script replicates the 2×2×2 example from Aguirregabiria and Mira
+"""
+Example usage of the discrete-game identification toolkit.
+
+This script replicates the 2x2x2 example from Aguirregabiria and Mira
 (2019) using the general toolkit provided in
-``discrete_game_identification.py``.  It constructs the payoff
+``discrete_game_identification.py``. It constructs the payoff
 parameters, solves for the equilibrium conditional choice
 probabilities (CCPs), mixes over latent types to obtain the joint
 distribution of actions, builds the Hessian and Jacobian matrices,
@@ -15,8 +19,8 @@ Run this script from the command line::
 
 It should output the ranks of the Hessian, the restricted Hessian on
 mixture weights, the Jacobian, and the stacked matrix, as well as
-condition numbers of various matrices.  The results should mirror
-those obtained in the Gauss replication for the end‑paper example.
+condition numbers of various matrices. The results should mirror
+those obtained in the Gauss replication for the end-paper example.
 """
 
 import sys, pathlib

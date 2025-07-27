@@ -3,12 +3,12 @@
 This is a general‐purpose Python toolkit for analysing identification in **static discrete games of incomplete information**. It extends Aguirregabiria & Mira (2019) — *“Identification of Games of Incomplete Information with Multiple Equilibria and Unobserved Heterogeneity”* — to any number of players, binary actions, multiple exogenous states, and multiple latent types.
 
 > **Paper context**  
-> The mixture‑of‑types framework distinguishes three unobservables — private information, common payoff shifters and sunspots — and shows that when the number of actions exceeds the number of mixture components the model is non‑parametrically identified (Aguirregabiria & Mira 2019, *Quantitative Economics*, 10: 1659‑1701).
+> The mixture‑of‑types framework distinguishes three unobservables (private information, common payoff shifters and sunspots) and shows that when the number of actions exceeds the number of mixture components the model is non‑parametrically identified (Aguirregabiria & Mira 2019, *Quantitative Economics*, 10: 1659‑1701).
 >
 > **Why you might care**  
-> In empirical IO we often specify a structural entry/exit or adoption game, simulate equilibria, then try to estimate pay‑off primitives.  
+> In empirical IO we often specify a structural entry/exit or adoption game, simulate equilibria, then try to estimate pay‑off primitives. 
 > Identification asks: *could two different parameter vectors generate exactly the same observable distributions?*  
-> If the answer is “yes”, your estimates are meaningless. This toolkit computes the Hessian of the log‑likelihood and the Jacobian of the equilibrium constraints, then checks the rank of the stacked matrix. Full rank ⇒ local identification.
+> If the answer is “yes”, your model is not identified. This toolkit computes the Hessian of the log‑likelihood and the Jacobian of the equilibrium constraints, then checks the rank of the stacked matrix. Full rank of this matrix ⇒ local identification.
 
 ---
 
@@ -34,6 +34,8 @@ Condition numbers:
   cond_H : 1.20e+06
   cond_J : 1.10e+07
 ```
+
+In this example which replicates Aguirregabiria and Mira (2019), the model is locally identified because the rank of the stacked matrix (64) matches the dimension of the parameter vector (16 states x 2 latent types x 2 players = 64).
 
 ---
 
@@ -77,21 +79,20 @@ print(ranks_and_condition_numbers(H, Dc)[0]['rank_J'])
 
 ## Learning Path
 
-1. **Read the 10‑slide primer** (`primer/primer.md` or `primer.ipynb`) – five minutes.
+1. **Read the 10‑point primer** (`primer/primer.md` or `primer.ipynb`) – quick guide to pick up on the theory behind this model.
 2. **Run Notebook 01** – see how CCPs respond to payoff changes and plot joint probabilities.
 3. **Run Notebook 02** – compute Hessian & Jacobian; interpret rank and condition numbers.
-4. **Run Notebook 03** – perform a one‑parameter MLE to see ID vs estimation.
+4. **Run Notebook 03** – perform a one‑parameter MLE to illustrate identification vs estimation.
 
 ---
 
 ## Extending the toolkit
 
+You could very easily fork the repository and extending the toolkit by adding:
+
 * **More link functions** – add probit by replacing `logistic`/`qlogit` and derivatives.
 * **Multinomial actions** – generalise `generate_action_combinations` and probability formulas.
-* **Structural‐parameter Jacobian** – adapt pattern in `build_Dc_hp_general`.
-* **Monte‑Carlo ID power study** – loop over simulated datasets and log rank failures.
-
-Pull requests or issue discussions welcome!
+* **Structural‐parameter Jacobian** – if your goal is to identify pay‑off primitives.
 
 ---
 
@@ -104,4 +105,4 @@ Pull requests or issue discussions welcome!
 
 ## License
 
-[MIT](./LICENSE) – free for academic or commercial use; attribution appreciated.
+[MIT](./LICENSE) – free for academic or commercial use.
